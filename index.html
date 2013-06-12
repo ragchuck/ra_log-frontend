@@ -1,0 +1,135 @@
+<!doctype html>
+<html data-ng-app="ra_log" data-ng-controller="AppCtrl">
+<head>
+    <meta charset="utf-8">
+    <script src="vendor/angular/angular.min.js"></script>
+    <script src="vendor/angular/angular-resource.min.js"></script>
+    <script src="vendor/angular/ui-bootstrap-tpls-0.3.0.js"></script>
+    <script src="js/services.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        _RA_LOG_SERVER_URL = 'http://127.0.0.1/projects/ra_log-server/public_api';
+    </script>
+
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<a name="top"></a>
+
+<!-- Navigation start -->
+<nav class="navbar navbar-fixed-top" data-ng-controller="NavCtrl">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="brand" href="./">
+                <span id="ra">ra</span>|Log
+            </a>
+
+            <ul class="nav">
+                <li data-ng-class="navClass('home')">
+                    <a href="#/home">
+                        Home
+                    </a>
+                </li>
+                <li data-ng-class="navClass('dashboard')">
+                    <a href="#/dashboard">
+                        Dashboard
+                    </a>
+                </li>
+                <li data-ng-class="navClass('profile')">
+                    <a href="#/profile">
+                        System profile
+                    </a>
+                </li>
+            </ul>
+
+
+            <ul class="nav pull-right">
+                <li class="dropdown" id="config">
+                    <a href="#config" class="dropdown-toggle" data-toggle="dropdown">
+                        Meta
+                        <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li class="">
+                            <a href="#" data-ng-show="!logged_in" data-ng-click="login()">
+                                <i class="icon-user"></i>&nbsp;
+                                Login
+                            </a>
+                        </li>
+                        <li class="">
+                            <a href="#" data-ng-show="logged_in">
+                                <i class="icon-user"></i>&nbsp;
+                                Logout
+                            </a>
+                        </li>
+                        <li class="">
+                            <a href="#" data-ng-show="logged_in">
+                                <i class="icon-refresh"></i>&nbsp;
+                                Refresh Data
+                            </a>
+                        </li>
+                        <li class="logged-in acl-admin">
+                            <a href="#/config">
+                                <i class="icon-cog"></i>&nbsp;
+                                Configuration
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+
+
+        </div>
+    </div>
+</nav>
+<!-- Navigation Ende -->
+
+<div id="import">
+    <div class="container">
+        <!--
+                        <p class="pull-right">
+                              <a class="js-close" href="#"><?= __("Close") ?></a>
+                        </p>
+                        -->
+        <div class="row">
+            <div class="span12">
+                <p class="info"></p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="span10">
+                <progress></progress>
+            </div>
+            <div class="span2">
+                <button class="btn btn-mini btn-pause"><i class="icon-pause"></i></button>
+                <button class="btn btn-mini btn-recover" disabled="disabled"><i class="icon-repeat"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="page" class="container">
+
+    <div id="alerts">
+        <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+    </div>
+
+    <div class="page-header">
+        <h1>Dashboard
+            <small>Index</small>
+        </h1>
+    </div>
+
+    <div id="content-container">
+        <div data-ng-view></div>
+    </div>
+
+    <div class="footer">
+        <p class="pull-right">
+            <a href="#top">Back to top</a>
+        </p>
+    </div>
+    <!-- #footer end -->
+</div>
+<!-- #page.container end -->
