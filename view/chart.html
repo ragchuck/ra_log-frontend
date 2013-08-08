@@ -1,0 +1,25 @@
+<div class="page-header">
+    <h1>Dashboard
+        <small>{{currentChart.title}}</small>
+    </h1>
+</div>
+<div>
+    <ul class="nav nav-pills" data-ng-controller="ChartListCtrl">
+        <li data-ng-repeat="chart in charts" data-ng-class="{active:isActiveChart(chart.name)}">
+            <a href="#/chart/{{chart.name}}">{{chart.title}}</a>
+        </li>
+    </ul>
+    <div class="container" data-ng-show="!!currentChart">
+        <highchart data-ng-model="currentChart"></highchart>
+        <div class="pager">
+            <ul class="pager">
+                <li class="previous">
+                    <a href="#/chart/{{currentChart.name}}/{{ prev | date:urlDate[idx] }}">&larr; {{ prev | date:'mediumDate' }}</a>
+                </li>
+                <li class="next">
+                    <a href="#/chart/{{currentChart.name}}/{{ next | date:urlDate[idx] }}">{{ next | date:'mediumDate' }} &rarr;</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

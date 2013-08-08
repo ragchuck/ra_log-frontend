@@ -2,16 +2,30 @@
 <html data-ng-app="ra_log" data-ng-controller="AppCtrl">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ra:log</title>
+
+
     <script src="vendor/angular/angular.min.js"></script>
     <script src="vendor/angular/angular-resource.min.js"></script>
-    <script src="vendor/angular/ui-bootstrap-tpls-0.3.0.js"></script>
+    <script src="vendor/angular/i18n/angular-locale_de.js"></script>
+    <script src="vendor/angular/ui-bootstrap-tpls-0.4.0.js"></script>
+
+    <script src="vendor/jquery/jquery-2.0.2.min.js"></script>
+    <script src="vendor/highcharts/highcharts.src.js"></script>
+
+
     <script src="js/services.js"></script>
+    <script src="js/directives.js"></script>
+    <script src="js/resources.js"></script>
     <script src="js/app.js"></script>
     <script>
         _RA_LOG_SERVER_URL = 'http://127.0.0.1/projects/ra_log-server/public_api';
     </script>
 
-    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <a name="top"></a>
@@ -21,21 +35,21 @@
     <div class="navbar-inner">
         <div class="container">
             <a class="brand" href="./">
-                <span id="ra">ra</span>|Log
+                <span id="ra">ra</span>:log
             </a>
 
             <ul class="nav">
-                <li data-ng-class="navClass('home')">
+                <li data-ng-class="{active:isActivePage('home')}">
                     <a href="#/home">
                         Home
                     </a>
                 </li>
-                <li data-ng-class="navClass('dashboard')">
+                <li data-ng-class="{active:isActivePage('dashboard')}">
                     <a href="#/dashboard">
                         Dashboard
                     </a>
                 </li>
-                <li data-ng-class="navClass('profile')">
+                <li data-ng-class="{active:isActivePage('profile')}">
                     <a href="#/profile">
                         System profile
                     </a>
@@ -82,15 +96,15 @@
         </div>
     </div>
 </nav>
-<!-- Navigation Ende -->
+<!-- Navigation end -->
 
 <div id="import">
     <div class="container">
         <!--
-                        <p class="pull-right">
-                              <a class="js-close" href="#"><?= __("Close") ?></a>
-                        </p>
-                        -->
+            <p class="pull-right">
+                  <a class="js-close" href="#"><?= __("Close") ?></a>
+            </p>
+        -->
         <div class="row">
             <div class="span12">
                 <p class="info"></p>
@@ -112,13 +126,7 @@
 <div id="page" class="container">
 
     <div id="alerts">
-        <alert ng-repeat="alert in alerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
-    </div>
-
-    <div class="page-header">
-        <h1>Dashboard
-            <small>Index</small>
-        </h1>
+        <alert data-ng-repeat="alert in alerts" data-ng-animate="'animate'" data-type="alert.type" data-close="closeAlert($index)">{{alert.msg}}</alert>
     </div>
 
     <div id="content-container">
@@ -133,3 +141,5 @@
     <!-- #footer end -->
 </div>
 <!-- #page.container end -->
+</body>
+</html>
