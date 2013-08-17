@@ -1,0 +1,33 @@
+{
+    "NAV_HOME": "Home",
+    "NAV_DASHBOARD": "Dashboard",
+    "NAV_CHARTS": "Diagramme",
+    "NAV_PROFILE": "Systemprofil",
+    "NAV_MENU": "Menü",
+    "NAV_LOGIN": "Anmelden",
+    "NAV_LOGOUT": "Abmelden",
+    "NAV_REFRESH": "Aktualisiere Daten",
+    "NAV_CONFIG": "Einstellungen",
+
+    "HC_CONTEXTBUTTONTITLE": "Diagramm Einstellungen",
+    "HC_DOWNLOADJPEG": "Download JPEG",
+    "HC_DOWNLOADPDF": "Download PDF",
+    "HC_DOWNLOADPNG": "Download PNG",
+    "HC_DOWNLOADSVG": "Download SVG",
+    "HC_LOADING": "Lädt...",
+    "HC_PRINTCHART": "Drucken",
+    "HC_RESETZOOM": "Zoom zurücksetzen",
+    "HC_RESETZOOMTITLE": "Zoom zurücksetzen (level 1:1)",
+
+    "TBL_MAX": "Max.",
+    "TBL_MAXDATE": "Datum",
+    "TBL_ACT": "Ist",
+    "TBL_PLAN": "Soll",
+    "TBL_DIFF": "Δ",
+    "TBL_PERC": "%",
+
+    "SUM_DAY": "Tagesleistung",
+    "SUM_MONTH": "Monatsleistung",
+    "SUM_YEAR": "Jahresleistung",
+    "SUM_TOTAL": "Gesamtleistung"
+}

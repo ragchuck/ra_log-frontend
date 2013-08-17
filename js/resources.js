@@ -1,39 +1,62 @@
-ra_log.factory('ra_log.resource', ['$resource', 'alertService', function($resource, alertService) {
-    return function (url, params)
-    {
+angular.module('ra_log.resources', ['ngResource'])
 
-        function _retrieveData(response) {
-            var data = angular.fromJson(response);
+    .factory('ra_log.http', ['$http', 'transformationService', function ($http, transformationService) {
+        return function (url, postData) {
+            var method = postData ? 'POST' : 'GET';
+            return $http({
+                method: method,
+                url: RA_LOG_SERVER_URL + url,
+                data: postData,
+                transformResponse: transformationService.transformResponse
+            })
+        };
+    }])
 
-            if (data.status == 'OK') {
-                return data.result;
-            }
+    .factory('ra_log.resource', ['$resource', 'alertService', 'transformationService',
+        function ($resource, alertService, transformationService) {
 
-            //alertService.add('error', 'Status: ' + data.status + '<br>' + data.result);
+            var defaultActions = {
+                'get': {
+                    method: 'GET'
+                },
+                'query': {
+                    method: 'GET',
+                    isArray: true
+                },
+                'save': {
+                    method: 'POST'
+                }
+            };
 
-            return null;
-        }
 
-        function _decorateData(data) {
+            return function (url, defaultParams, actions) {
 
-            var modifiedData = {};
-            modifiedData[resourceType] = data;
-            return modifiedData;
-        }
+                actions = actions ? actions : defaultActions;
 
-        return $resource(
-            _RA_LOG_SERVER_URL + url,
-            params,
-            {
-                'get':    {method:'GET', transformResponse: _retrieveData},
-                'query':  {method:'GET', transformResponse: _retrieveData, isArray: true},
-                'save':   {method:'POST', transformRequest: _decorateData, transformResponse: _retrieveData }
-            }
-        );
-    };
-}]);
+                angular.forEach(actions, function(action) {
+                    action.transformResponse = action.transformResponse
+                        ? action.transformResponse
+                        : transformationService.transformResponse;
 
-ra_log.factory('Chart', ['ra_log.resource', function(raLogResource) {
-    return raLogResource('/chart/:name');
-}]);
+                    if (action.method !== 'GET')
+                        action.transformRequest = action.transformRequest
+                            ? action.transformRequest
+                            : transformationService.transformRequest;
+                });
+
+                return $resource(
+                    RA_LOG_SERVER_URL + url,
+                    defaultParams,
+                    actions
+                );
+            };
+        }])
+
+    .factory('Chart', ['ra_log.resource', function (raLogResource) {
+        return raLogResource('/chart/:name');
+    }])
+
+    .factory('ImportResource', ['ra_log.resource', function (raLogResource) {
+        return raLogResource('/import/file', {}, {import: {method: 'POST'}})
+    }]);
 

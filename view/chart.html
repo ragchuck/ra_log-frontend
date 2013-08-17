@@ -1,25 +1,67 @@
-<div class="page-header">
-    <h1>Dashboard
-        <small>{{currentChart.title}}</small>
-    </h1>
-</div>
-<div>
-    <ul class="nav nav-pills" data-ng-controller="ChartListCtrl">
-        <li data-ng-repeat="chart in charts" data-ng-class="{active:isActiveChart(chart.name)}">
-            <a href="#/chart/{{chart.name}}">{{chart.title}}</a>
-        </li>
-    </ul>
-    <div class="container" data-ng-show="!!currentChart">
-        <highchart data-ng-model="currentChart"></highchart>
-        <div class="pager">
-            <ul class="pager">
-                <li class="previous">
-                    <a href="#/chart/{{currentChart.name}}/{{ prev | date:urlDate[idx] }}">&larr; {{ prev | date:'mediumDate' }}</a>
-                </li>
-                <li class="next">
-                    <a href="#/chart/{{currentChart.name}}/{{ next | date:urlDate[idx] }}">{{ next | date:'mediumDate' }} &rarr;</a>
-                </li>
-            </ul>
+<div class="row-fluid">
+    <div class="span2">
+        <!--Sidebar content-->
+        <br>
+        <ul class="nav nav-tabs nav-stacked">
+            <li data-ng-repeat="chart in charts" data-ng-class="{active: chart.name === currentChart.name}">
+                <a href="#/chart/{{chart.name}}">{{chart.title}}</a>
+            </li>
+        </ul>
+    </div>
+    <div class="span10">
+        <!--Body content-->
+        <br>
+        <div class="pull-right" data-ng-show="!!pager.charts[pager.idx+1]">
+            <a class="btn"
+               href="#/chart/{{ pager.charts[pager.idx+1] }}/{{ pager.date | date:pager.urlDates[pager.idx+1] }}">
+                <i class="icon-chevron-up"></i>
+                {{ pager.date | date:pager.displayDates[idx+1] }}</a>
         </div>
+
+        <div class="page-header">
+            <h1>{{ currentChart.title }}
+                <small>{{currentChart.subtitle}}</small>
+            </h1>
+        </div>
+        <div>
+
+
+
+            <highchart data-ng-model="currentChart" data-loading="showLoading"></highchart>
+
+            <div class="well well-small">
+                <a class="btn btn-large"
+                   href="#/chart/{{ currentChart.name }}/{{ pager.prev | date:pager.urlDates[pager.idx] }}">
+                    <i class="icon-chevron-left"></i>
+                </a>
+                <a class="btn btn-large pull-right"
+                   href="#/chart/{{ currentChart.name }}/{{ pager.next | date:pager.urlDates[pager.idx] }}">
+                    <i class="icon-chevron-right"></i>
+                </a>
+            </div>
+            <div class="table" data-ng-show="!!rows.length">
+                <table class="table table-bordered table-condensed">
+                    <tr>
+                        <td><span class="pull-right">kWh</span></td>
+                        <th class="header">{{ 'TBL_MAX' | translate }}</th>
+                        <th class="header">{{ 'TBL_MAXDATE' | translate }}</th>
+                        <th class="header">{{ 'TBL_ACT' | translate }}</th>
+                        <th class="header">{{ 'TBL_PLAN' | translate }}</th>
+                        <th class="header">{{ 'TBL_DIFF' | translate }}</th>
+                        <th class="header">{{ 'TBL_PERC' | translate }}</th>
+                    </tr>
+                    <tr data-ng-repeat="row in rows">
+                        <th class="header">{{ row.title | translate }}</th>
+                        <td class="value"></td>
+                        <td class="value"></td>
+                        <td class="value">{{ row.sum_actual | number:2 }}</td>
+                        <td class="value">{{ row.sum_plan | number:2 }}</td>
+                        <td class="value">{{ row.sum_actual - row.sum_plan | number:2 }}</td>
+                        <td class="value">{{ row.sum_actual / row.sum_plan * 100 | number:1 }} %</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>

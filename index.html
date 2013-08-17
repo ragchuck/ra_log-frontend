@@ -9,22 +9,31 @@
 
     <script src="vendor/angular/angular.min.js"></script>
     <script src="vendor/angular/angular-resource.min.js"></script>
-    <script src="vendor/angular/i18n/angular-locale_de.js"></script>
+    <script src="vendor/angular/angular-translate.min.js"></script>
+    <script src="vendor/angular/angular-translate-loader-static-files.min.js"></script>
     <script src="vendor/angular/ui-bootstrap-tpls-0.4.0.js"></script>
 
     <script src="vendor/jquery/jquery-2.0.2.min.js"></script>
     <script src="vendor/highcharts/highcharts.src.js"></script>
 
 
+    <script src="js/resources.js"></script>
     <script src="js/services.js"></script>
     <script src="js/directives.js"></script>
-    <script src="js/resources.js"></script>
+    <script src="js/controllers.js"></script>
     <script src="js/app.js"></script>
     <script>
-        _RA_LOG_SERVER_URL = 'http://127.0.0.1/projects/ra_log-server/public_api';
+        /* -- ra_log Config -- */
+        RA_LOG_SERVER_URL = 'http://127.0.0.1/projects/ra_log-server/public_api';
+        RA_LOG_LOCALE = 'de';
+        RA_LOG_SHOW_IMPORT_PROGRESS = true;
+        RA_LOG_FOLLOW_IMPORT_PROGRESS = true;
+
+        document.write('\x3Cscript src="vendor/angular/i18n/angular-locale_' + RA_LOG_LOCALE + '.js">\x3C/script>');
     </script>
 
     <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="vendor/bootstrap/css/bootstrap-responsive.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -35,24 +44,18 @@
     <div class="navbar-inner">
         <div class="container">
             <a class="brand" href="./">
-                <span id="ra">ra</span>:log
+                <span id="ra">RA</span>:log
             </a>
 
             <ul class="nav">
                 <li data-ng-class="{active:isActivePage('home')}">
-                    <a href="#/home">
-                        Home
-                    </a>
+                    <a href="#/home" data-translate>NAV_HOME</a>
                 </li>
-                <li data-ng-class="{active:isActivePage('dashboard')}">
-                    <a href="#/dashboard">
-                        Dashboard
-                    </a>
+                <li data-ng-class="{active:isActivePage('chart')}">
+                    <a href="#/chart/day" data-translate>NAV_CHARTS</a>
                 </li>
                 <li data-ng-class="{active:isActivePage('profile')}">
-                    <a href="#/profile">
-                        System profile
-                    </a>
+                    <a href="#/profile" data-translate>NAV_PROFILE</a>
                 </li>
             </ul>
 
@@ -60,32 +63,32 @@
             <ul class="nav pull-right">
                 <li class="dropdown" id="config">
                     <a href="#config" class="dropdown-toggle" data-toggle="dropdown">
-                        Meta
+                        {{ 'NAV_MENU' | translate }}
                         <b class="caret"></b>
                     </a>
                     <ul class="dropdown-menu">
                         <li class="">
                             <a href="#" data-ng-show="!logged_in" data-ng-click="login()">
                                 <i class="icon-user"></i>&nbsp;
-                                Login
+                                {{ 'NAV_LOGIN' | translate }}
                             </a>
                         </li>
                         <li class="">
                             <a href="#" data-ng-show="logged_in">
                                 <i class="icon-user"></i>&nbsp;
-                                Logout
+                                {{ 'NAV_LOGOUT' | translate }}
                             </a>
                         </li>
                         <li class="">
                             <a href="#" data-ng-show="logged_in">
                                 <i class="icon-refresh"></i>&nbsp;
-                                Refresh Data
+                                {{ 'NAV_REFRESH' | translate }}
                             </a>
                         </li>
                         <li class="logged-in acl-admin">
                             <a href="#/config">
                                 <i class="icon-cog"></i>&nbsp;
-                                Configuration
+                                {{ 'NAV_CONFIG' | translate }}
                             </a>
                         </li>
                     </ul>
@@ -98,48 +101,72 @@
 </nav>
 <!-- Navigation end -->
 
-<div id="import">
-    <div class="container">
-        <!--
-            <p class="pull-right">
-                  <a class="js-close" href="#"><?= __("Close") ?></a>
-            </p>
-        -->
-        <div class="row">
-            <div class="span12">
-                <p class="info"></p>
+<div id="page">
+    <div class="container container-fluid">
+        <div class="row-fluid">
+            <div class="span3"></div>
+            <div class="span6">
+                <div id="import" data-ng-controller="ImportCtrl">
+                    <div class="well well-small" data-ng-animate="'slide'" data-ng-show="show">
+                        <div class="row-fluid">
+                            <div class="span9">
+                                <p class="text-info">
+                                    <small>{{ info }}</small>
+                                </p>
+                            </div>
+                            <div class="span3">
+                                <p class="text-info text-right " data-ng-show="!!progressText">
+                                    <small>({{ progressText }})</small>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row-fluid">
+                            <div class="span12">
+                                <!--<progress data-percent="progress" class="{{state}}"></progress>-->
+                                <div class="progress " data-ng-class="progressClass">
+                                    <div class="bar" style="width:{{progress}}%">{{progress | number:1}}%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--
+                                        <div class="row">
+                                            <div class="span1 offset3 btn-group">
+                                                <button class="btn btn-mini" data-ng-click="start()"><i class="icon-play"></i></button>
+                                                <button class="btn btn-mini" data-ng-click="pause()"><i class="icon-pause"></i></button>
+                                                <button class="btn btn-mini" data-ng-click="recover()" disabled="disabled"><i class="icon-repeat"></i></button>
+                                            </div>
+                                        </div>-->
+                    </div>
+                </div>
+                <div id="alerts" data-ng-controller="AlertCtrl">
+                    <alert data-ng-repeat="alert in alerts" data-ng-animate="'animate'" data-type="alert.type"
+                           data-close="closeAlert($index)">{{alert.msg}}
+                    </alert>
+                </div>
+            </div>
+            <div class="span3">
+                <div id="info" class="well well-small" data-ng-controller="InfoCtrl">
+                    <dl class="dl-horizontal">
+                        <dt>{{ 'INFO_TODAY_POWER' | translate }}</dt>
+                        <dd>{{ today_power | number:2 }} kWh</dd>
+                        <dt>{{ 'INFO_TOTAL_POWER' | translate }}</dt>
+                        <dd>{{ total_update | number:2 }} kWh</dd>
+                        <dt>{{ 'INFO_LAST_UPDATE' | translate }}</dt>
+                        <dd>{{ last_update | number:2 }}</dd>
+                    </dl>
+                </div>
             </div>
         </div>
-        <div class="row">
-            <div class="span10">
-                <progress></progress>
-            </div>
-            <div class="span2">
-                <button class="btn btn-mini btn-pause"><i class="icon-pause"></i></button>
-                <button class="btn btn-mini btn-recover" disabled="disabled"><i class="icon-repeat"></i></button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<div id="page" class="container">
-
-    <div id="alerts">
-        <alert data-ng-repeat="alert in alerts" data-ng-animate="'animate'" data-type="alert.type" data-close="closeAlert($index)">{{alert.msg}}</alert>
     </div>
 
-    <div id="content-container">
-        <div data-ng-view></div>
-    </div>
+    <div class="container container-fluid" data-ng-view></div>
 
     <div class="footer">
         <p class="pull-right">
-            <a href="#top">Back to top</a>
+            <!--<a href="#top" data-translate>NAV_TOP</a>-->
         </p>
     </div>
-    <!-- #footer end -->
 </div>
-<!-- #page.container end -->
+
 </body>
 </html>
