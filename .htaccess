@@ -1,0 +1,7 @@
+RewriteEngine On
+# This will enable the Rewrite capabilities
+
+RewriteCond %{ENV:HTTPS} !=on
+# This checks to make sure the connection is not already HTTPS
+
+RewriteRule ^/?(.*) https://%{SERVER_NAME}/$1 [R,L]
