@@ -1,274 +1,456 @@
-/**
- * Created with JetBrains PhpStorm.
- * User: Martin
- * Date: 10.08.13
- * Time: 13:55
- * To change this template use File | Settings | File Templates.
- */
+angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
+
+.controller('AppCtrl',
+    ['$rootScope', '$scope', 'notify', 'localDB', 'ra_log.charts' ,
+    function($rootScope, $scope, notify, localDB, CHARTS) {
+
+        const DEFAULT_CSS = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
+        const BOOTSTRAP_CDN = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7";
+
+        var themes = [{name: "Default", url: DEFAULT_CSS},{}];
+        angular.forEach([
+            "cerulean",
+            "cosmo",
+            "cyborg",
+            "darkly",
+            "flatly",
+            "journal",
+            "lumen",
+            "paper",
+            "readable",
+            "sandstone",
+            "simplex",
+            "slate",
+            "solar",
+            "spacelab",
+            "superhero",
+            "united",
+            "yeti"
+            ], function(t) { 
+                themes.push({
+                    name: t[0].toUpperCase() + t.substring(1), 
+                    url: BOOTSTRAP_CDN +  "/" + t + "/bootstrap.min.css"
+                });
+            });
+
+        $scope.themes = themes;
+        $scope.currentTheme = themes[0];
+
+            $scope.charts = CHARTS;
+
+        // var highchartThemes = [{name: "Default", options: null},{}];
+        // angular.forEach([
+        //     'avocado',
+        //     'dark-blue',
+        //     'dark-green',
+        //     'dark-unica',
+        //     'gray',
+        //     'grid',
+        //     'grid-light',
+        //     'sand-signika',
+        //     'skies',
+        //     'sunset'
+        //     ], function(t) {
+        //         highchartThemes.push({
+        //             name: t, url: 'https://code.highcharts.com/stock/themes/' + t + '.js'
+        //         });
+        //     });
+
+        // $scope.chartThemes = highchartThemes;
+        // $scope.currentChartTheme = highchartThemes[0];
+
+        //var chartThemes = [];
+        //angular.forEach(["skies", "grid", "gray", "dark-green", "dark-blue"],
+        //    function(t) { this.push({name: t, url: "vendor/highcharts/themes/" + t + ".js"});
+        //}, chartThemes);
+
+        //$scope.chartThemes = chartThemes;
+        //$scope.currentChartTheme = chartThemes[2];
 
 
-angular.module('ra_log.controllers', [])
+        localDB.get('_local/currentTheme').then(function(doc){
+            $scope.currentTheme = doc.theme;
+            $scope.currentThemeDoc = doc;
+            console.log('Loaded theme', doc.theme.name);
+        }).catch(function(err) {
+            console.log('Local currentTheme not found, setting to default.');
+            localDB.put({
+                _id : '_local/currentTheme', 
+                theme: themes[0]
+            }).then(function(doc){
+                $scope.currentThemeDoc = doc;
+            }).catch(function(err) {
+                console.log(err)
+            });
+        });
 
-    .controller('AppCtrl',
-        ['$scope',
-            function($scope) {
 
+
+        $scope.$on('themeSelection', function(e, theme, type) {
+            if (type === 0) {
+                console.log('Loading Bootstrap theme "' + theme.name + '"');
+                $scope.currentTheme = theme;
+                $scope.currentThemeDoc.theme = theme;
+                localDB.put($scope.currentThemeDoc).then(function(doc) {
+                    $scope.currentThemeDoc._rev = doc.rev;
+                    notify.success('Saved "' + theme.name + '" as your theme.');
+                }).catch(function(err) {
+                    notify.error(err.message)
+                });
+            } else {
+                $scope.currentChartTheme = theme;
             }
-        ])
+        })
+    }
+    ])
 
-    .controller('AlertCtrl',
+    // .controller('StatusCtrl', 
+    //     ['$scope',
+    //         function($scope) {
+        // [{
+        //     "type": "View Group Indexer",
+        //     "task": "ralog-sma-data-test _design/SMA_MeanPublic",
+        //     "status": "Processed 5714 of 25151 changes (22%)",
+        //     "pid": "<0.3788.16>"
+        // }]   
+    //         }
+    //     ])
+
+    .controller('NotificationCtrl',
         ['$scope',
-            function($scope) {
+        function($scope) {
 
-                $scope.alerts = [];
+            $scope.alerts = [];
 
-                // root binding for alertService
+                // root binding for notify
                 $scope.closeAlert = function(index) {
                     $scope.alerts.splice(index, 1);
                 };
 
-                $scope.$on('alert', function(e, alert) {
-                    $scope.alerts.push(alert);
+                $scope.$on('notify', function(e, msg) {
+                    var idx = $scope.alerts.push(msg);
+                    $scope.$apply();
+
+                    if (msg.type === 'success') {
+                        setTimeout(function() {
+                            $scope.alerts.splice(idx-1, 1);
+                            $scope.$apply();
+                        }, 3000)
+                    }
                 });
             }
-        ])
+            ])
 
 
     .controller('NavCtrl',
-        ['$scope', '$location',
-            function ($scope, $location) {
-                $scope.isActivePage = function (page) {
-                    var currentRoute = $location.path().split('/')[1] || 'home';
-                    return page === currentRoute;
-                };
-            }
-        ])
+        ['$scope', '$location', 'themeSelection', 
+        function ($scope, $location, themeSelection) {
 
-    .controller('InfoCtrl',
-        ['$scope',
-            function ($scope) {
+            $scope.isActivePage = function (page, idx) {
+                idx = idx === undefined ? 1 : idx;
+                var currentRoute = $location.path().split('/')[idx];
+                return page === currentRoute;
+            };
 
-            }
+            $scope.loadTheme = function(themeUrl, type) {
+                themeSelection(themeUrl, type);
+            };
+
+        },
         ])
 
     .controller('ChartCtrl',
-        ['$scope', '$routeParams', '$location', 'ra_log.resource', 'Chart', '$route', '$filter',
-            function($scope, $routeParams, $location, raLogResource, Chart, $route, $filter) {
+        ['$scope', '$routeParams', '$location', '$route', '$filter', 'notify', 'dateCalculator',
+        function($scope, $routeParams, $location, $route, $filter, notify, _dateAdd) {
 
-                var _dateAdd = function (objDate, sInterval, iNum) {
-                    var objDate2 = new Date(objDate);
-                    if (!sInterval || iNum == 0) return objDate2;
-                    switch (sInterval.toLowerCase()) {
-                        case "day": return objDate2.setDate(objDate2.getDate() + iNum);
-                        case "month": return objDate2.setMonth(objDate2.getMonth() + iNum);
-                        case "year": return objDate2.setFullYear(objDate2.getFullYear() + iNum);
-                    }
-                    return objDate2;
-                };
+            var _format = $filter('date');
+            var lastChartName;
+            var _updateChart = function() {
 
-                var _format = $filter('date');
+                var chartName = $route.current.params.name || 'day';
 
-                var lastChartName;
-                var _updateChart = function() {
-
-                    var chartName = $route.current.params.name || 'day';
-
-                    console.log('_updateChart', chartName);
-
-                    if (lastChartName === chartName) {
-                        _updateSeries();
-                        return;
-                    }
-
-                    var currentChart;
-                    angular.forEach($scope.charts, function(chart) {
-                        if (chart.name === chartName)
-                            currentChart = chart;
-                    });
-
-                    $scope.currentChart = currentChart;
-
+                if (lastChartName === chartName) {
                     _updateSeries();
+                    return;
+                }
 
-                    lastChartName = chartName;
-                };
+                console.log('_updateChart', chartName);
 
-                var lastDate;
-                var _updateSeries = function() {
+                var currentChart;
+                angular.forEach($scope.charts, function(chart) {
+                    if (chart.name === chartName)
+                        currentChart = chart;
+                });
 
-                    var chartName = $route.current.params.name || 'day';
-                    var date = new Date(
-                        $route.current.params.year,
-                        $route.current.params.month - 1 || 1,
-                        $route.current.params.day || 1
-                    );
+                if (!currentChart) {
+                    notify.error('Chart <b>' + chartName + '</b> not found!');
+                    return;
+                }
 
-                    if(!angular.isDate(date) || isNaN( date.getTime() )) {
-                        date = new Date();
-                    }
+                $scope.currentChart = currentChart;
 
-                    console.log('_updateSeries', chartName, date);
+                _updateSeries();
 
-                    if (lastDate === date && lastChartName === chartName) return;
+                lastChartName = chartName;
+            };
 
-                    //$route.title = _format(date, 'longDate');
+            var lastDate;
+            var _updateSeries = function() {
 
-                    $scope.showLoading = true;
+                var chartName = $route.current.params.name || 'day';
+                var date = new Date(Date.UTC(
+                    ($route.current.params.year),
+                    ($route.current.params.month || 1) - 1,
+                    ($route.current.params.day || 1),
+                    0, 0, 0
+                    ));
 
-                    var series = angular.copy($scope.currentChart.series);
+                if(!angular.isDate(date) || isNaN( date.getTime() )) {
+                    date = new Date();
+                    date.setHours(0, 0, 0, 0);
+                }
 
-                    if (!angular.isArray(series))
-                        series = [series];
+                if (lastDate === date && lastChartName === chartName) return;
 
-                    var availableParams = {
-                            date_yyyymmdd: _format(date, 'yyyyMMdd'),
-                            date_yyyymm: _format(date, 'yyyyMM'),
-                            date_yyyy: _format(date, 'yyyy')
-                        };
+                console.log('_updateSeries', chartName, date.toJSON());
 
-                    var seriesLoading = series.length;
-                    var s = 0;
+                lastDate = date;
 
-                    angular.forEach(series, function(plot) {
-                        var queryParams = {};
-                        plot.data = [];
+                //$route.title = _format(date, 'longDate');
 
-                        angular.forEach(plot.params, function(param) {
-                            if(availableParams[param])
-                                queryParams[param] = availableParams[param];
-                        });
+                $scope.currentChart.showLoading = 'Loading...';
 
-                        raLogResource(plot.url).query(queryParams, function(rawSeries) {
+                var series = angular.copy($scope.currentChart.series);
 
-                            angular.forEach(rawSeries, function(s) {
-                                plot.data.push([parseInt(s.x), parseFloat(s.y)]);
-                            });
+                if (!angular.isArray(series))
+                    series = [series];
 
-                            if(++s === seriesLoading)
-                                $scope.showLoading = false;
-                        });
-                    });
+                var seriesLoading = series.length;
+                var dataExists = false;
+                var s = 0;
 
-                    $scope.currentChart.series = series;
+                angular.forEach(series, function(plot) {
+                    plot.data = null;
+                    plot.query(date).then(function(data) {
 
-                    var charts = ["day", "month", "year"];
-                    var urlDates = ["yyyy/MM/dd", "yyyy/MM", "yyyy"];
-                    var displayDates = ["d. MMMM y", "MMMM y", "y"];
-                    var idx = $.inArray(chartName, charts);
+                        $.extend(true, plot, data);
+                        dataExists = dataExists || data.length;
 
+                        //console.log(plot.data);
 
-                    $scope.currentChart.subtitle = _format(date, displayDates[idx]);
-
-                    if (idx > -1) {
-                        $scope.pager = {
-                            next : _dateAdd(date, chartName, 1),
-                            prev : _dateAdd(date, chartName, -1),
-                            idx : idx,
-                            charts : charts,
-                            date : date,
-                            urlDates : urlDates,
-                            displayDates : displayDates
-                        };
-
-                        if (charts[idx-1]) {
-                            $scope.$on('chart.series.click', function($event, chartEvent) {
-                                $event.stopPropagation();
-                                var _date = new Date(chartEvent.point.x),
-                                    path = '/chart/' + charts[idx-1] + '/' + _format(_date, urlDates[idx-1]);
-                                $location.path(path);
-
-                                // let angular know that something changed
-                                $scope.$apply();
-                            });
+                        if(++s === seriesLoading) {
+                            $scope.currentChart.showLoading = dataExists ? false : 'no data available';
+                            $scope.$apply();
                         }
-                    }
+                    }).catch(function(err){
+                        notify.error(err.message);
+                        console.log(err);
+                    });
+                });
+                //console.log(series);
 
-                    // Update table
-                    raLogResource('/table?year=:year&month=:month&day=:day',{
-                            year: date.getFullYear(),
-                            month: date.getMonth() + 1,
-                            day: date.getDate()
-                        }).query(function(rows){
-                            $scope.rows = rows;
-                        });
+                //$scope.currentChart.series = series;
+                $scope.currentChart.options.series = series;
 
-                    lastDate = date;
+                var charts = ["day", "month", "year"],
+                urlDates = ["yyyy/MM/dd", "yyyy/MM", "yyyy"],
+                displayDates = ["d. MMMM y", "MMMM y", "y"],
+                idx = $.inArray(chartName, charts);
+
+                // cleanup former watches
+                if ($scope.seriesUnbind)
+                    $scope.seriesUnbind();
+
+                if (idx < 0) {
+                    $scope.pager = {show : false};
+                    return;
+                }
+
+                var chart, 
+                today = new Date(),
+                    inbd = new Date(2009, 8, 1); // Inbetriebnahme
+
+                $scope.dpOptions = {
+                    //dateDisabled: disabled,
+                    datepickerMode: charts[idx],
+                    maxDate: today,
+                    minDate: inbd,
+                    minMode: charts[idx],
+                    startingDay: 1,
+                    showWeeks: false
                 };
 
-                $scope.showLoading = true;
-                $scope.charts = Chart.query(_updateChart);
+                $scope.currentChart.subtitle = _format(date, displayDates[idx]);
+
+
+                $scope.pager = {
+                    show : true,
+                    next : _dateAdd(date, chartName, 1) < today ? _dateAdd(date, chartName, 1) : null,
+                    prev : _dateAdd(date, chartName, -1) > inbd ?  _dateAdd(date, chartName, -1) : null,
+                    idx : idx,
+                    charts : charts,
+                    date : date,
+                    urlDates : urlDates,
+                    displayDates : displayDates
+                };
+
+                $scope.dpDate = date;
+
+                
+                if (charts[idx-1]) {
+                    $scope.seriesUnbind = $scope.$on('chart.series.click', function($event, chartEvent) {
+                        $event.stopPropagation();
+
+                        if (!chartEvent.point.x) return;
+
+                        var _date = new Date(chartEvent.point.x),
+                        path = '/chart/' + charts[idx-1] + '/' + _format(_date, urlDates[idx-1]);
+
+
+                        $location.path(path);
+
+                        // let angular know that something changed
+                        $scope.$apply();
+                    });
+                }
+
+
+                // Update table
+                /*raLogResource('/table?year=:year&month=:month&day=:day',{
+                        year: date.getFullYear(),
+                        month: date.getMonth() + 1,
+                        day: date.getDate()
+                    }).query(function(rows){
+                        $scope.rows = rows;
+                    });*/
+
+                };
+
+
+
+
+                
+                $scope.dpPopup = {
+                    opened: false
+                };
+                $scope.dpOpen = function() {
+                    $scope.dpPopup.opened = true;
+                };
+
+
+                _updateChart();
 
                 var lastRoute = $route.current;
 
-                $scope.$on('$locationChangeSuccess', function() {
-                    _updateChart();
+                $scope.$on('$locationChangeSuccess', function(evt) {
+                    // First check if we're still in on the chart page
+                    if ($route.current.$$route.controller === 'ChartCtrl') {
 
-                    // prevent reloading view
-                    $route.current = lastRoute;
-                });
-            }
-        ])
+                        // now we can update the chart
+                        _updateChart();
 
-    .controller('ImportCtrl',
-        ['$scope', 'importService', '$timeout',
-            function($scope, importService, $timeout) {
-                if (!RA_LOG_SHOW_IMPORT_PROGRESS) return;
-
-                $scope.show = false;
-
-                var stateMap = {
-                    running: 'progress-success progress-striped active',
-                    failed: 'progress-striped progress-danger',
-                    paused: 'progress-striped progress-info',
-                    succeeded: 'progress-success'
-                };
-
-                $scope.$on('importService.statechanged', function($event, event) {
-                    console.log('importService.statechanged',event.state);
-                    if (event.state === 'running') {
-                        $scope.show = true;
-                    } else if (event.state === 'succeeded') {
-                        var hide = $timeout(function() {
-                            $scope.show = false;
-                        }, 1500);
+                        // prevent reloading the view
+                        $route.current = lastRoute;
                     }
-                    $scope.progress = event.progress;
-                    $scope.progressClass = stateMap[event.state];
                 });
 
-                $scope.$on('importService.progress', function($event, event) {
-                    $scope.info = event.currentFile || event.state;
-                    $scope.progress = event.progress;
-                    $scope.progressClass = stateMap[event.state];
-                    $scope.progressText = event.progressText + ' files - ' + event.progress + '%'
+
+                $scope.$watch('dpDate', function(newDate, oldDate) {
+
+                    var pager = $scope.pager;
+
+                    if (!pager || newDate === pager.date) return;
+
+                    var path = '/chart/' + $scope.currentChart.name + '/' + _format(newDate, pager.urlDates[pager.idx]);
+                    
+                    $location.path(path);
                 });
 
-                $scope.start = function() {
-                    if (importService.getState() === 'paused')
-                        importService.resume();
-                    else
-                        importService.start();
-                };
-                $scope.pause = function() {
-                    importService.pause();
-                };
-                $scope.recover = function() {
-                    importService.recover();
-                };
             }
-        ])
+            ])
 
-    .controller('ProfileCtrl',
-        ['$scope',
-            function($scope) {
 
+.controller('ProfileCtrl',
+    ['$scope', function($scope) {
+
+    }])
+
+.controller('DashboardCtrl',
+    ['$scope', 'ra_log.db', '$filter', 'notify', function($scope, db, $filter, notify) {
+
+        var f = $filter('date');
+        var date = new Date();
+
+        var displays = [
+            {
+                caption: "Today",
+                unit: "kwH",
+                query: function() {
+                    return db.query('MeanPublic/e_total',{
+                        "group": true,
+                        "startkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'DD') ],
+                        "endkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'DD'), {}],
+                    }).then(function(response) {
+                        return JSON.stringify(response);
+                    });
+                }
+            },
+            {
+                caption: "Month",
+                unit: "kwH",
+                query: function() {
+                    return db.query('MeanPublic/e_total',{
+                        "group_level": 1,
+                        "startkey": [ f(date, 'yyyy') , f(date, 'MM') ],
+                        "endkey": [ f(date, 'yyyy') , f(date, 'MM') , {}],
+                    }).then(function(response) {
+                        return JSON.stringify(response);
+                    });
+                }
+            },
+            {
+                caption: "Year",
+                unit: "kwH",
+                query: function() {
+                    return db.query('MeanPublic/e_total',{
+                        "group_level": 2,
+                        "startkey": [ f(date, 'yyyy') ],
+                        "endkey": [ f(date, 'yyyy') , {}],
+                    }).then(function(response) {
+                        return JSON.stringify(response);
+                    });
+
+                }
+            },
+            {
+                caption: "Total",
+                unit: "kwH",
+                query: function() {
+                    var key = "WRTL1EBA:2100122532:E-Total";
+                    return db.query('MeanPublic/by_key_and_time', {
+                        "startkey": [ key, {}] ,
+                        "endkey": [ key ],
+                        "limit": 1,
+                        "descending": true
+                    }).then(function(response) {
+                        return JSON.stringify(response);
+                    });
+                }
             }
-        ])
+        ];
 
-    .controller('DashboardCtrl',
-        ['$scope',
-            function($scope) {
+        angular.forEach(displays, function(display) {
+            display.query().then(function(data) {
 
-            }
-        ]);
+                display.value = data;
+                $scope.$apply();
+
+            }).catch(function(err){
+                notify.error(err.message);
+                console.log(err);
+            });
+        });
+
+        $scope.displays = displays;
+    }]);
 
