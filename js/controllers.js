@@ -384,47 +384,56 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
         var displays = [
             {
                 caption: "Today",
-                unit: "kwH",
+                unit: "kWh",
                 query: function() {
                     return db.query('MeanPublic/e_total',{
-                        "group": true,
+                        "group_level": 3,
                         "startkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'DD') ],
                         "endkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'DD'), {}],
                     }).then(function(response) {
-                        return JSON.stringify(response);
+                    	if (!response.rows[0]) return {value: "-"};
+                        return {
+                        	value: Math.round(response.rows[0].value.max - response.rows[0].value.min)
+                        }
                     });
                 }
             },
             {
                 caption: "Month",
-                unit: "kwH",
+                unit: "kWh",
                 query: function() {
                     return db.query('MeanPublic/e_total',{
-                        "group_level": 1,
+                        "group_level": 2,
                         "startkey": [ f(date, 'yyyy') , f(date, 'MM') ],
                         "endkey": [ f(date, 'yyyy') , f(date, 'MM') , {}],
                     }).then(function(response) {
-                        return JSON.stringify(response);
+                    	if (!response.rows[0]) return {value: "-"};
+                        return {
+                        	value: Math.round(response.rows[0].value.max - response.rows[0].value.min)
+                        };
                     });
                 }
             },
             {
                 caption: "Year",
-                unit: "kwH",
+                unit: "kWh",
                 query: function() {
                     return db.query('MeanPublic/e_total',{
-                        "group_level": 2,
-                        "startkey": [ f(date, 'yyyy') ],
+                        "group_level": 1,
+                        "startkey": [ f(date, 'yyyy')  ],
                         "endkey": [ f(date, 'yyyy') , {}],
                     }).then(function(response) {
-                        return JSON.stringify(response);
+                    	if (!response.rows[0]) return {value: "-"};
+                        return {
+                        	value: Math.round(response.rows[0].value.max - response.rows[0].value.min)
+                        };
                     });
 
                 }
             },
             {
                 caption: "Total",
-                unit: "kwH",
+                unit: "kWh",
                 query: function() {
                     var key = "WRTL1EBA:2100122532:E-Total";
                     return db.query('MeanPublic/by_key_and_time', {
@@ -433,7 +442,12 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                         "limit": 1,
                         "descending": true
                     }).then(function(response) {
-                        return JSON.stringify(response);
+                    	if (!response.rows[0]) return {value: "-"};
+                        return {
+                        	value: Math.round(response.rows[0].value),
+                        	time: response.rows[0].key[1],
+                        	moment: moment(response.rows[0].key[1]).fromNow()
+                        };
                     });
                 }
             }
@@ -442,7 +456,7 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
         angular.forEach(displays, function(display) {
             display.query().then(function(data) {
 
-                display.value = data;
+                $.extend(true, display, data);
                 $scope.$apply();
 
             }).catch(function(err){

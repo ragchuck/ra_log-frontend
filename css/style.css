@@ -50,6 +50,10 @@
     font-weight: 600;
     font-size: 0.65em;
 }
+.display .time {
+    text-align: center;
+    color: #9f9f9f;
+}
 
 
 /* Sticky footer styles
