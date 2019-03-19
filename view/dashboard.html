@@ -2,7 +2,7 @@
 	<div class="col-md-{{12/displays.length}}" data-ng-repeat="display in displays" >
 	  	<div class="display well well-sm">
 	  		<div class="caption">{{ display.caption }}</div>
-	  		<div class="value">{{ display.value }} <small class="unit">{{ display.unit }}</small></div>
+	  		<div class="value">{{ display.value | number:1}} <small class="unit">{{ display.unit }}</small></div>
 	  		<div class="time" title="{{ display.time }}">{{ display.moment }}</div>
 	  	</div>
 	</div>

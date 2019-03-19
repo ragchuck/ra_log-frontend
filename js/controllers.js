@@ -388,12 +388,12 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                 query: function() {
                     return db.query('MeanPublic/e_total',{
                         "group_level": 3,
-                        "startkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'DD') ],
-                        "endkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'DD'), {}],
+                        "startkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'dd') ],
+                        "endkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'dd'), {}],
                     }).then(function(response) {
                     	if (!response.rows[0]) return {value: "-"};
                         return {
-                        	value: Math.round(response.rows[0].value.max - response.rows[0].value.min)
+                        	value: response.rows[0].value.max - response.rows[0].value.min
                         }
                     });
                 }
@@ -409,7 +409,7 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                     }).then(function(response) {
                     	if (!response.rows[0]) return {value: "-"};
                         return {
-                        	value: Math.round(response.rows[0].value.max - response.rows[0].value.min)
+                        	value: response.rows[0].value.max - response.rows[0].value.min
                         };
                     });
                 }
@@ -425,7 +425,7 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                     }).then(function(response) {
                     	if (!response.rows[0]) return {value: "-"};
                         return {
-                        	value: Math.round(response.rows[0].value.max - response.rows[0].value.min)
+                        	value: response.rows[0].value.max - response.rows[0].value.min
                         };
                     });
 
