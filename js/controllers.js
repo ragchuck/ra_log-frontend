@@ -4,29 +4,15 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
     ['$rootScope', '$scope', 'notify', 'localDB', 'ra_log.charts' ,
     function($rootScope, $scope, notify, localDB, CHARTS) {
 
+        $scope.charts = CHARTS;
+
+
         const DEFAULT_CSS = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css";
         const BOOTSTRAP_CDN = "https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7";
+        const THEMES = "cerulean,cosmo,cyborg,darkly,flatly,journal,lumen,paper,readable,sandstone,simplex,slate,solar,spacelab,superhero,united,yeti".split(",");
 
         var themes = [{name: "Default", url: DEFAULT_CSS},{}];
-        angular.forEach([
-            "cerulean",
-            "cosmo",
-            "cyborg",
-            "darkly",
-            "flatly",
-            "journal",
-            "lumen",
-            "paper",
-            "readable",
-            "sandstone",
-            "simplex",
-            "slate",
-            "solar",
-            "spacelab",
-            "superhero",
-            "united",
-            "yeti"
-            ], function(t) { 
+        angular.forEach(THEMES, function(t) { 
                 themes.push({
                     name: t[0].toUpperCase() + t.substring(1), 
                     url: BOOTSTRAP_CDN +  "/" + t + "/bootstrap.min.css"
@@ -36,7 +22,6 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
         $scope.themes = themes;
         $scope.currentTheme = themes[0];
 
-            $scope.charts = CHARTS;
 
         // var highchartThemes = [{name: "Default", options: null},{}];
         // angular.forEach([
@@ -91,6 +76,7 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                 console.log('Loading Bootstrap theme "' + theme.name + '"');
                 $scope.currentTheme = theme;
                 $scope.currentThemeDoc.theme = theme;
+
                 localDB.put($scope.currentThemeDoc).then(function(doc) {
                     $scope.currentThemeDoc._rev = doc.rev;
                     notify.success('Saved "' + theme.name + '" as your theme.');
@@ -120,26 +106,27 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
         ['$scope',
         function($scope) {
 
-            $scope.alerts = [];
+       		$scope.alerts = [];
 
-                // root binding for notify
-                $scope.closeAlert = function(index) {
-                    $scope.alerts.splice(index, 1);
-                };
+            // root binding for notify
+            $scope.closeAlert = function(index) {
+                $scope.alerts.splice(index, 1);
+            };
 
-                $scope.$on('notify', function(e, msg) {
-                    var idx = $scope.alerts.push(msg);
-                    $scope.$apply();
+            $scope.$on('notify', function(e, msg) {
+                var idx = $scope.alerts.push(msg);
+                $scope.$apply();
 
-                    if (msg.type === 'success') {
-                        setTimeout(function() {
-                            $scope.alerts.splice(idx-1, 1);
-                            $scope.$apply();
-                        }, 3000)
-                    }
-                });
-            }
-            ])
+                if (msg.type === 'success') {
+                    setTimeout(function() {
+                        //$scope.alerts.splice(idx-1, 1);
+                        $scope.alerts.shift();
+                        $scope.$apply();
+                    }, 3000)
+                }
+            });
+        }
+        ])
 
 
     .controller('NavCtrl',
@@ -160,10 +147,9 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
         ])
 
     .controller('ChartCtrl',
-        ['$scope', '$routeParams', '$location', '$route', '$filter', 'notify', 'dateCalculator',
-        function($scope, $routeParams, $location, $route, $filter, notify, _dateAdd) {
+        ['$scope', '$routeParams', '$location', '$route', 'notify',
+        function($scope, $routeParams, $location, $route, notify) {
 
-            var _format = $filter('date');
             var lastChartName;
             var _updateChart = function() {
 
@@ -189,6 +175,18 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
 
                 $scope.currentChart = currentChart;
 
+                if (!$scope.seriesUnbind)
+                    $scope.seriesUnbind = $scope.$on('chart.series.click', function($event, chartEvent) {
+                        $event.stopPropagation();
+
+                        if (!chartEvent.point.path) return;
+
+                        $location.path(chartEvent.point.path);
+
+                        // let angular know that something changed
+                        $scope.$apply();
+                    });
+
                 _updateSeries();
 
                 lastChartName = chartName;
@@ -198,21 +196,35 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
             var _updateSeries = function() {
 
                 var chartName = $route.current.params.name || 'day';
-                var date = new Date(Date.UTC(
-                    ($route.current.params.year),
-                    ($route.current.params.month || 1) - 1,
-                    ($route.current.params.day || 1),
-                    0, 0, 0
-                    ));
+                // var date = new Date(Date.UTC(
+                //     ($route.current.params.year),
+                //     ($route.current.params.month || 1) - 1,
+                //     ($route.current.params.day || 1),
+                //     0, 0, 0
+                //     ));
 
-                if(!angular.isDate(date) || isNaN( date.getTime() )) {
-                    date = new Date();
-                    date.setHours(0, 0, 0, 0);
+                // if(!angular.isDate(date) || isNaN( date.getTime() )) {
+                //     date = new Date();
+                //     date.setHours(0, 0, 0, 0);
+                // }
+
+                var date = moment([
+            				($route.current.params.year),
+            				($route.current.params.month || 1) -1,
+            				($route.current.params.day || 1),
+            				0, 0, 0
+    				]);
+
+                //console.log(date);
+
+                if (!date.isValid()) {
+                	date = moment().startOf('day');
                 }
 
-                if (lastDate === date && lastChartName === chartName) return;
 
-                console.log('_updateSeries', chartName, date.toJSON());
+                if (date.isSame(lastDate) && lastChartName === chartName) return;
+
+                console.log('_updateSeries', chartName, date.format());
 
                 lastDate = date;
 
@@ -231,12 +243,12 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
 
                 angular.forEach(series, function(plot) {
                     plot.data = null;
-                    plot.query(date).then(function(data) {
+                    plot.query(date).then(function(result) {
 
-                        $.extend(true, plot, data);
-                        dataExists = dataExists || data.length;
+                        $.extend(true, plot, result);
+                        dataExists = dataExists || !!result.data.length;
 
-                        //console.log(plot.data);
+                        //console.log(plot.result);
 
                         if(++s === seriesLoading) {
                             $scope.currentChart.showLoading = dataExists ? false : 'no data available';
@@ -252,14 +264,13 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                 //$scope.currentChart.series = series;
                 $scope.currentChart.options.series = series;
 
-                var charts = ["day", "month", "year"],
-                urlDates = ["yyyy/MM/dd", "yyyy/MM", "yyyy"],
-                displayDates = ["d. MMMM y", "MMMM y", "y"],
-                idx = $.inArray(chartName, charts);
 
-                // cleanup former watches
-                if ($scope.seriesUnbind)
-                    $scope.seriesUnbind();
+                /* PAGER */
+
+                var charts = ["day", "month", "year"],
+                    urlDates = ["YYYY/MM/DD", "YYYY/MM", "YYYY"],
+                    displayDates = ["Do MMMM Y", "MMMM Y", "Y"],
+                    idx = $.inArray(chartName, charts);
 
                 if (idx < 0) {
                     $scope.pager = {show : false};
@@ -267,26 +278,28 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                 }
 
                 var chart, 
-                today = new Date(),
-                    inbd = new Date(2009, 8, 1); // Inbetriebnahme
+                	Today = new Date(),
+                    Inbetriebnahme = new Date(2009, 10, 4); // Inbetriebnahme
 
                 $scope.dpOptions = {
                     //dateDisabled: disabled,
                     datepickerMode: charts[idx],
-                    maxDate: today,
-                    minDate: inbd,
+                    maxDate: Today,
+                    minDate: Inbetriebnahme,
                     minMode: charts[idx],
                     startingDay: 1,
                     showWeeks: false
                 };
 
-                $scope.currentChart.subtitle = _format(date, displayDates[idx]);
+                $scope.currentChart.subtitle = date.format(displayDates[idx]);
 
+                var next = moment(date).add(1, chartName+'s');
+                var prev = moment(date).subtract(1, chartName+'s');
 
                 $scope.pager = {
                     show : true,
-                    next : _dateAdd(date, chartName, 1) < today ? _dateAdd(date, chartName, 1) : null,
-                    prev : _dateAdd(date, chartName, -1) > inbd ?  _dateAdd(date, chartName, -1) : null,
+                    next : next.isBefore(Today) ? next : null,
+                    prev : prev.isAfter(Inbetriebnahme) ? prev : null,
                     idx : idx,
                     charts : charts,
                     date : date,
@@ -295,25 +308,6 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                 };
 
                 $scope.dpDate = date;
-
-                
-                if (charts[idx-1]) {
-                    $scope.seriesUnbind = $scope.$on('chart.series.click', function($event, chartEvent) {
-                        $event.stopPropagation();
-
-                        if (!chartEvent.point.x) return;
-
-                        var _date = new Date(chartEvent.point.x),
-                        path = '/chart/' + charts[idx-1] + '/' + _format(_date, urlDates[idx-1]);
-
-
-                        $location.path(path);
-
-                        // let angular know that something changed
-                        $scope.$apply();
-                    });
-                }
-
 
                 // Update table
                 /*raLogResource('/table?year=:year&month=:month&day=:day',{
@@ -359,15 +353,15 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
 
                     var pager = $scope.pager;
 
-                    if (!pager || newDate === pager.date) return;
+                    if (!pager || moment(newDate).isSame(pager.date)) return;
 
-                    var path = '/chart/' + $scope.currentChart.name + '/' + _format(newDate, pager.urlDates[pager.idx]);
+                    var path = '/chart/' + $scope.currentChart.name + '/' + moment(newDate).format(pager.urlDates[pager.idx]);
                     
                     $location.path(path);
                 });
 
             }
-            ])
+        ])
 
 
 .controller('ProfileCtrl',
@@ -376,7 +370,7 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
     }])
 
 .controller('DashboardCtrl',
-    ['$scope', 'ra_log.db', '$filter', 'notify', function($scope, db, $filter, notify) {
+    ['$scope', 'ra_log.db', '$filter', 'notify', 'CONFIG', function($scope, db, $filter, notify, CONFIG) {
 
         var f = $filter('date');
         var date = new Date();
@@ -435,7 +429,7 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                 caption: "Total",
                 unit: "kWh",
                 query: function() {
-                    var key = "WRTL1EBA:2100122532:E-Total";
+                    var key = CONFIG.WEBBOX_KEY + ":E-Total";
                     return db.query('MeanPublic/by_key_and_time', {
                         "startkey": [ key, {}] ,
                         "endkey": [ key ],

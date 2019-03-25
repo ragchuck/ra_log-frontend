@@ -114,3 +114,18 @@ code {
 .alert.ng-leave.ng-leave-active {
     bottom: -200px;
 }
+
+/* Highcharts overwritr */
+.highcharts-grid-line {
+  mix-blend-mode: hue, difference;
+}
+
+.highcharts-background {
+  fill: rgba(255,255,255,0.0);
+}
+.highcharts-container {
+  font-family: inherit;
+}
+.highcharts-container text {
+  /*mix-blend-mode: difference;*/
+}

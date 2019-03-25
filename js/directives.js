@@ -22,8 +22,7 @@ angular.module('highcharts-ng', [])
                 months: $locale.DATETIME_FORMATS.MONTH,
                 //numericSymbols: null,
                 shortMonths: $locale.DATETIME_FORMATS.SHORTMONTH,
-                weekdays: $locale.DATETIME_FORMATS.DAY,
-                loading: 'Loading...'
+                weekdays: $locale.DATETIME_FORMATS.DAY
             }
         });
 
@@ -37,7 +36,6 @@ angular.module('highcharts-ng', [])
             },
             require: 'ngModel',
             link: function ($scope, element, attrs) {
-
                 var defaultChartOptions = {
                     title:  {"text": null},
                     subtitle: {"text": null},
@@ -46,11 +44,13 @@ angular.module('highcharts-ng', [])
                         renderTo: element[0],
                         width: $(element[0]).parent().width(),
                         height: $(element[0]).parent().width() * 0.4,
+                        styledMode: true,
                         events: {
                             addSeries:  function(event) { $scope.$emit('chart.addSeries', event, this)},
-                            click:      function(event) { $scope.$emit('chart.click', event, this)},
+                            click:      function(event) { $scope.$emit('chart.click', event, this);},
                             load:       function(event) { $scope.$emit('chart.load', event, this)},
                             redraw:     function(event) { $scope.$emit('chart.redraw', event, this)},
+                            render:     function(event) { $scope.$emit('chart.render', event, this)},
                             selection:  function(event) { $scope.$emit('chart.selection', event, this)}
                         }
                     },
@@ -143,7 +143,7 @@ angular.module('highcharts-ng', [])
                     chart.redraw();
                 };
 
-                $scope.$watch("ngModel.theme", function(theme) {
+               /* $scope.$watch("ngModel.theme", function(theme) {
                     if (!chart || !theme) return;
 
                     Highcharts.setOptions(defaultOptions);
@@ -153,23 +153,28 @@ angular.module('highcharts-ng', [])
 
                     _createChart($scope.ngModel.type, $scope.ngModel.options);
                     _createSeries($scope.ngModel.series);
-                });
+                });*/
 
 
                 $scope.$watch("ngModel.showLoading", function(showLoading) {
-                    if (!chart) return;
-
-                    if (showLoading)
-                        chart.showLoading(showLoading);
-                    else
-                        chart.hideLoading();
+                    if (!chart) 
+                        return;
+                    //console.log('showLoading:', showLoading);
+                    setTimeout(function() {
+                        if (showLoading) 
+                            chart.showLoading(showLoading);                    
+                        else
+                            chart.hideLoading();                    
+                    },0)
                 });
 
                 $scope.$watch("ngModel.series", function (newSeries, oldSeries) {
-                    if (!chart || !newSeries) return;
+                    if (!chart || !newSeries) 
+                        return;
 
                     //do nothing when called on registration
-                    if (newSeries === oldSeries) return;
+                    if (newSeries === oldSeries) 
+                        return;
 
                     _createSeries(newSeries);
                 }, true);
@@ -201,14 +206,14 @@ angular.module('highcharts-ng', [])
 
                 var _resizeChart = function() {
 
+                    if (!chart)
+                        return;
+
                     var w = $(element[0]).parent().width(),
                         h = $(element[0]).parent().width() * 0.56;
 
                     defaultChartOptions.chart.width = w;
                     defaultChartOptions.chart.height = h;
-
-                    if (!chart)
-                        return;
 
                     chart.setSize(w, h);
                 };

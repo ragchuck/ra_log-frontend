@@ -24,27 +24,14 @@ angular.module('ra_log.services', ['ra_log.config'])
         return new PouchDB('localDB');
     })
 
-    .factory('couchService', ['$rootScope', 'COUCH_DB_URL', function($rootScope, COUCH_DB_URL) {
+    .factory('couchService', ['$rootScope', 'CONFIG', function($rootScope, CONFIG) {
     	//window.Promise =$q()
         //PouchDB.debug.disable();
         return { 
             use: function(dbName) {
-                return new PouchDB(COUCH_DB_URL + dbName);
+                return new PouchDB(CONFIG.COUCH_DB_URL + dbName);
             }
         };
     }])
-
-    .factory('dateCalculator', function() {
-        return function (objDate, sInterval, iNum) {
-            var objDate2 = new Date(objDate);
-            if (!sInterval || iNum == 0) return objDate2;
-            switch (sInterval.toLowerCase()) {
-                case "day": return objDate2.setDate(objDate2.getDate() + iNum);
-                case "month": return objDate2.setMonth(objDate2.getMonth() + iNum);
-                case "year": return objDate2.setFullYear(objDate2.getFullYear() + iNum);
-            }
-            return objDate2;
-        };
-    })
 
 ;

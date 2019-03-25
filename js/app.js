@@ -3,6 +3,7 @@ var ra_log = angular.module('ra_log', [
 		'ngLocale', 	
         'ngRoute',
         'ngAnimate',
+        'angularMoment',
         'ra_log.config',
 		'ra_log.services', 
 		'ra_log.resources', 
