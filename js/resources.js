@@ -4,6 +4,78 @@ angular.module('ra_log.resources', ['ngResource'])
         return couchService.use('ralog-sma-data-' + (moment().year()))
     }])
 
+    .factory('ra_log.cards', ['ra_log.db', 'CONFIG', function(db, CONFIG) {
+    
+        	return [{
+                    caption: "Today",
+                    unit: "kWh",
+                    query: function(dt) {
+                        return db.query('MeanPublic/e_total',{
+                            "group_level": 3,
+                            "startkey": [ dt.format('YYYY') , dt.format('MM') , dt.format('DD') ],
+                            "endkey": [ dt.format('YYYY') , dt.format('MM') , dt.format('DD'), {}],
+                        }).then(function(response) {
+                        	if (!response.rows[0]) 
+                        		return {value: "-"};
+                        	else
+    	                        return {value: response.rows[0].value.max - response.rows[0].value.min}
+                        });
+                    }
+                },{
+                    caption: "Month",
+                    unit: "kWh",
+                    query: function(dt) {
+                        return db.query('MeanPublic/e_total',{
+                            "group_level": 2,
+                            "startkey": [ dt.format('YYYY') , dt.format('MM') ],
+                            "endkey": [ dt.format('YYYY') , dt.format('MM') , {}],
+                        }).then(function(response) {
+                        	if (!response.rows[0]) 
+                        		return {value: "-"};
+                        	else
+    	                        return {value: response.rows[0].value.max - response.rows[0].value.min};
+                        });
+                    }
+                },            {
+                    caption: "Year",
+                    unit: "kWh",
+                    query: function(dt) {
+                        return db.query('MeanPublic/e_total',{
+                            "group_level": 1,
+                            "startkey": [ dt.format('YYYY')  ],
+                            "endkey": [ dt.format('YYYY') , {}],
+                        }).then(function(response) {
+                        	if (!response.rows[0]) 
+                        		return {value: "-"};
+                        	else
+    	                        return {value: response.rows[0].value.max - response.rows[0].value.min};
+                        });
+    
+                    }
+                },{
+                    caption: "Total",
+                    unit: "kWh",
+                    query: function(dt) {
+                        var key = CONFIG.WEBBOX_KEY + ":E-Total";
+                        return db.query('MeanPublic/by_key_and_time', {
+                            "startkey": [ key, {}] ,
+                            "endkey": [ key ],
+                            "limit": 1,
+                            "descending": true
+                        }).then(function(response) {
+                        	if (!response.rows[0]) 
+                        		return {value: "-"};
+                        	else
+    	                        return {
+    	                        	value: response.rows[0].value,
+    	                        	time: response.rows[0].key[1],
+    	                        	moment: moment(response.rows[0].key[1]).fromNow()
+    	                        };
+                        });
+                    }
+                }];
+        }])
+
     .factory('ra_log.charts', ['ra_log.db', 'CONFIG', function (db, CONFIG) {
         // var _time = function(y,m,d) {
         //     return new Date(parseInt(y),parseInt(m)-1,parseInt(d)).getTime();
@@ -230,12 +302,12 @@ angular.module('ra_log.resources', ['ngResource'])
                 "name": "E-Total (avg)",
                 "type": "spline",            
                 "query" : function(date) {
-                    return db.query('MeanPublic/e_total_by_month',{
-                        "group": true
+                    return db.query('MeanPublic/e_total_agg',{
+                        "group_level": 1
                     }).then(function(response) {
                         var data = [];
                         angular.forEach(response.rows,function(r) {
-                            var time = moment([date.year(),r.key-1]);
+                            var time = moment([date.year(),r.key[0]-1]);
                             data.push([
                                 +time, 
                                 r.value.sum / Math.round(r.value.count / 30)
@@ -527,7 +599,7 @@ angular.module('ra_log.resources', ['ngResource'])
                 //"color": "rgba(124,181,236,0.50)",
                 "query": function(date) {
                     return db.query('MeanPublic/e_total',{
-                        group: true,
+                        "group": true,
                         "startkey": [ CONFIG.WORST_YEAR ],
                         "endkey": [ 
                             CONFIG.WORST_YEAR , 
@@ -547,6 +619,36 @@ angular.module('ra_log.resources', ['ngResource'])
                         });
                         return {
                             "name": "Worst year (" + CONFIG.WORST_YEAR + ")",
+                            "data": data
+                        };
+                    });
+                },
+                "threshold": null
+            },{
+                "name": "current_year-avg",
+                "type": "line",
+                //"color": "rgba(124,181,236,0.50)",
+                "query": function(date) {
+                    return db.query('MeanPublic/e_total_agg',{
+                        "group": true,
+                        "endkey": [ 
+                            date.format('MM'), 
+                            date.format('DD')
+                        ]
+                    })
+                    .then(function(response) {
+                        var data = [];
+                        var start = null;
+                        var sum = 0;
+                        angular.forEach(response.rows, function(r) {
+                            start = start == null ? r.value.max : start;
+                            data.push([
+                                +moment([date.year(),r.key[0]-1,r.key[1]]), 
+                                sum += r.value.sum / r.value.count
+                            ]);
+                        });
+                        return {
+                            "name": "Average",
                             "data": data
                         };
                     });

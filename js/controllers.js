@@ -147,8 +147,8 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
         ])
 
     .controller('ChartCtrl',
-        ['$scope', '$routeParams', '$location', '$route', 'notify',
-        function($scope, $routeParams, $location, $route, notify) {
+        ['$scope', '$routeParams', '$location', '$route', 'notify', 'ra_log.cards',
+        function($scope, $routeParams, $location, $route, notify, raLogCards) {
 
             var lastChartName;
             var _updateChart = function() {
@@ -309,6 +309,16 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
 
                 $scope.dpDate = date;
 
+                $scope.card = angular.copy(raLogCards[idx]);
+                $scope.card.query(date).then(function(data) {
+                    $.extend(true, $scope.card, data);
+                    $scope.$apply();
+
+                }).catch(function(err){
+                    notify.error(err.message);
+                    console.log(err);
+                });
+
                 // Update table
                 /*raLogResource('/table?year=:year&month=:month&day=:day',{
                         year: date.getFullYear(),
@@ -318,50 +328,50 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
                         $scope.rows = rows;
                     });*/
 
-                };
+            };
 
 
 
 
+            
+            $scope.dpPopup = {
+                opened: false
+            };
+            $scope.dpOpen = function() {
+                $scope.dpPopup.opened = true;
+            };
+
+
+            _updateChart();
+
+            var lastRoute = $route.current;
+
+            $scope.$on('$locationChangeSuccess', function(evt) {
+                // First check if we're still in on the chart page
+                if ($route.current.$$route.controller === 'ChartCtrl') {
+
+                    // now we can update the chart
+                    _updateChart();
+
+                    // prevent reloading the view
+                    $route.current = lastRoute;
+                }
+            });
+
+
+            $scope.$watch('dpDate', function(newDate, oldDate) {
+
+                var pager = $scope.pager;
+
+                if (!pager || moment(newDate).isSame(pager.date)) return;
+
+                var path = '/chart/' + $scope.currentChart.name + '/' + moment(newDate).format(pager.urlDates[pager.idx]);
                 
-                $scope.dpPopup = {
-                    opened: false
-                };
-                $scope.dpOpen = function() {
-                    $scope.dpPopup.opened = true;
-                };
+                $location.path(path);
+            });
 
-
-                _updateChart();
-
-                var lastRoute = $route.current;
-
-                $scope.$on('$locationChangeSuccess', function(evt) {
-                    // First check if we're still in on the chart page
-                    if ($route.current.$$route.controller === 'ChartCtrl') {
-
-                        // now we can update the chart
-                        _updateChart();
-
-                        // prevent reloading the view
-                        $route.current = lastRoute;
-                    }
-                });
-
-
-                $scope.$watch('dpDate', function(newDate, oldDate) {
-
-                    var pager = $scope.pager;
-
-                    if (!pager || moment(newDate).isSame(pager.date)) return;
-
-                    var path = '/chart/' + $scope.currentChart.name + '/' + moment(newDate).format(pager.urlDates[pager.idx]);
-                    
-                    $location.path(path);
-                });
-
-            }
-        ])
+        }
+    ])
 
 
 .controller('ProfileCtrl',
@@ -370,87 +380,12 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
     }])
 
 .controller('DashboardCtrl',
-    ['$scope', 'ra_log.db', '$filter', 'notify', 'CONFIG', function($scope, db, $filter, notify, CONFIG) {
+    ['$scope', 'ra_log.cards', 'notify', function($scope, cards, notify) {
+        var dt = moment();
+        angular.forEach(cards, function(card) {
+            card.query(dt).then(function(data) {
 
-        var f = $filter('date');
-        var date = new Date();
-
-        var displays = [
-            {
-                caption: "Today",
-                unit: "kWh",
-                query: function() {
-                    return db.query('MeanPublic/e_total',{
-                        "group_level": 3,
-                        "startkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'dd') ],
-                        "endkey": [ f(date, 'yyyy') , f(date, 'MM') , f(date, 'dd'), {}],
-                    }).then(function(response) {
-                    	if (!response.rows[0]) return {value: "-"};
-                        return {
-                        	value: response.rows[0].value.max - response.rows[0].value.min
-                        }
-                    });
-                }
-            },
-            {
-                caption: "Month",
-                unit: "kWh",
-                query: function() {
-                    return db.query('MeanPublic/e_total',{
-                        "group_level": 2,
-                        "startkey": [ f(date, 'yyyy') , f(date, 'MM') ],
-                        "endkey": [ f(date, 'yyyy') , f(date, 'MM') , {}],
-                    }).then(function(response) {
-                    	if (!response.rows[0]) return {value: "-"};
-                        return {
-                        	value: response.rows[0].value.max - response.rows[0].value.min
-                        };
-                    });
-                }
-            },
-            {
-                caption: "Year",
-                unit: "kWh",
-                query: function() {
-                    return db.query('MeanPublic/e_total',{
-                        "group_level": 1,
-                        "startkey": [ f(date, 'yyyy')  ],
-                        "endkey": [ f(date, 'yyyy') , {}],
-                    }).then(function(response) {
-                    	if (!response.rows[0]) return {value: "-"};
-                        return {
-                        	value: response.rows[0].value.max - response.rows[0].value.min
-                        };
-                    });
-
-                }
-            },
-            {
-                caption: "Total",
-                unit: "kWh",
-                query: function() {
-                    var key = CONFIG.WEBBOX_KEY + ":E-Total";
-                    return db.query('MeanPublic/by_key_and_time', {
-                        "startkey": [ key, {}] ,
-                        "endkey": [ key ],
-                        "limit": 1,
-                        "descending": true
-                    }).then(function(response) {
-                    	if (!response.rows[0]) return {value: "-"};
-                        return {
-                        	value: Math.round(response.rows[0].value),
-                        	time: response.rows[0].key[1],
-                        	moment: moment(response.rows[0].key[1]).fromNow()
-                        };
-                    });
-                }
-            }
-        ];
-
-        angular.forEach(displays, function(display) {
-            display.query().then(function(data) {
-
-                $.extend(true, display, data);
+                $.extend(true, card, data);
                 $scope.$apply();
 
             }).catch(function(err){
@@ -459,6 +394,6 @@ angular.module('ra_log.controllers', ['ngSanitize', 'ra_log.config'])
             });
         });
 
-        $scope.displays = displays;
+        $scope.cards = cards;
     }]);
 

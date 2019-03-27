@@ -94,6 +94,15 @@ angular.module('highcharts-ng', [])
                                 },
                                 credits: {
                                     enabled: false
+                                },
+                                rangeSelector: {
+                                    enabled: false
+                                },
+                                navigator: {
+                                    enabled: false
+                                },
+                                scrollbar: {
+                                    enabled: false
                                 }
                             }
                         }]

@@ -1,9 +1,9 @@
 <div class="row">
-	<div class="col-md-{{12/displays.length}}" data-ng-repeat="display in displays" >
+	<div class="col-md-{{12/cards.length}}" data-ng-repeat="card in cards" >
 	  	<div class="display well well-sm">
-	  		<div class="caption">{{ display.caption }}</div>
-	  		<div class="value">{{ display.value | number:1}} <small class="unit">{{ display.unit }}</small></div>
-	  		<div class="time" title="{{ display.time }}">{{ display.moment }}</div>
+	  		<div class="caption">{{ card.caption }}</div>
+	  		<div class="value">{{ card.value | number:1}} <small class="unit">{{ card.unit }}</small></div>
+	  		<div class="time" title="{{ card.time }}">{{ card.moment }}</div>
 	  	</div>
 	</div>
 </div>

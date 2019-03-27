@@ -10,6 +10,9 @@
 .navbar-brand span.sun {
     color: rgb(0, 225, 0);
 }
+.navbar {  
+    border-radius: 0;
+}
 
 .uib-datepicker-popup table .btn,
 .uib-datepicker-popup table .btn-sm, 
@@ -38,11 +41,11 @@
     color: #9f9f9f;
     font-weight: bold;
     font-variant: small-caps;
-
+    line-height: 0.9em;
 }
 .display .value {
     text-align: center;
-    font-size: 2em;
+    font-size: 1.8em;
     font-weight: bolder;
 }
 .display .unit {

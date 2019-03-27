@@ -59,7 +59,11 @@
               <b class="glyphicon glyphicon-chevron-left"></b>
             </a>
           </div>
-          <div class="col-md-8 hidden-xs"></div>
+          <div class="col-md-8 hidden-xs display">
+            <div class="caption">Total</div>
+            <div class="value">{{ card.value | number:1}} <small class="unit">{{ card.unit }}</small></div>
+            <div class="time" title="{{ card.time }}">{{ card.moment }}</div>
+          </div>
           <!--<div class="col-md-2 text-center">
             <strong class="lead">{{ 4457 | number:2 }} kWh</strong><br>
             <small class="text-muted">{{ 'INFO_POWER_TOTAL'  }}</small>
