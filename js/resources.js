@@ -517,12 +517,15 @@ angular.module('ra_log.resources', ['ngResource'])
                     .then(function(response) {
                         var data = [];
                         var start = null;
+                        var time = null;
                         angular.forEach(response.rows, function(r) {
                             start = start == null ? r.value.max : start;
-                            data.push([
-                                +moment([r.key[0],r.key[1]-1,r.key[2]]), 
-                                r.value.max - start
-                            ]);
+                            time = moment([r.key[0],r.key[1]-1,r.key[2]]);
+                            if(time.isValid() )
+                                data.push([
+                                    +time, 
+                                    r.value.max - start
+                                ]);
                         });
                         return {
                             "name": date.format('YYYY'),
@@ -549,12 +552,15 @@ angular.module('ra_log.resources', ['ngResource'])
                     .then(function(response) {
                         var data = [];
                         var start = null;
+                        var time = null;
                         angular.forEach(response.rows, function(r) {
                             start = start == null ? r.value.max : start;
-                            data.push([
-                                +moment([date.year(),r.key[1]-1,r.key[2]]), 
-                                r.value.max - start
-                            ]);
+                            time = moment([date.year(),r.key[1]-1,r.key[2]]);
+                            if(time.isValid())
+                                data.push([
+                                    +time, 
+                                    r.value.max - start
+                                ]);
                         });
                         return {
                             "name": last_year.format('YYYY'),
@@ -579,12 +585,15 @@ angular.module('ra_log.resources', ['ngResource'])
                     .then(function(response) {
                         var data = [];
                         var start = null;
+                        var time = null;
                         angular.forEach(response.rows, function(r) {
                             start = start == null ? r.value.max : start;
-                            data.push([
-                                +moment([date.year(),r.key[1]-1,r.key[2]]), 
-                                r.value.max - start
-                            ]);
+                            time = moment([date.year(),r.key[1]-1,r.key[2]]);
+                            if(time.isValid())
+                                data.push([
+                                    +time, 
+                                    r.value.max - start
+                                ]);
                         });
                         return {
                             "name": "Best year (" + CONFIG.BEST_YEAR + ")",
@@ -610,12 +619,15 @@ angular.module('ra_log.resources', ['ngResource'])
                     .then(function(response) {
                         var data = [];
                         var start = null;
+                        var time = null;
                         angular.forEach(response.rows, function(r) {
                             start = start == null ? r.value.max : start;
-                            data.push([
-                                +moment([date.year(),r.key[1]-1,r.key[2]]), 
-                                r.value.max - start
-                            ]);
+                            time = moment([date.year(),r.key[1]-1,r.key[2]]);
+                            if(time.isValid())
+                                data.push([
+                                    +time, 
+                                    r.value.max - start
+                                ]);
                         });
                         return {
                             "name": "Worst year (" + CONFIG.WORST_YEAR + ")",
@@ -640,12 +652,15 @@ angular.module('ra_log.resources', ['ngResource'])
                         var data = [];
                         var start = null;
                         var sum = 0;
+                        var time = null;
                         angular.forEach(response.rows, function(r) {
                             start = start == null ? r.value.max : start;
-                            data.push([
-                                +moment([date.year(),r.key[0]-1,r.key[1]]), 
-                                sum += r.value.sum / r.value.count
-                            ]);
+                            time = moment([date.year(),r.key[0]-1,r.key[1]]);
+                            if(time.isValid())
+                                data.push([
+                                    +time, 
+                                    sum += r.value.sum / r.value.count
+                                ]);
                         });
                         return {
                             "name": "Average",
